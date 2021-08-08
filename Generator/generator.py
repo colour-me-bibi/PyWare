@@ -18,7 +18,7 @@ class App(tk.Tk):
         self.iconbitmap("crypt.ico")
 
         # UI options
-        entry_font = {"font": ("Helvetica", 13)}
+        # entry_font = {"font": ("Helvetica", 13)}
 
         # configure the grid
         self.columnconfigure(0, weight=1)
@@ -31,15 +31,21 @@ class App(tk.Tk):
         winsound.PlaySound("song.wav", winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_LOOP)
 
         # Imports our image in
-        load = Image.open("image.png")
-        render = ImageTk.PhotoImage(load)
-        img = Label(self, image=render, borderwidth=0, highlightthickness=0)
-        img.image = render
+        img = Label(
+            self,
+            image=ImageTk.PhotoImage(Image.open("image.png")),
+            borderwidth=0,
+            highlightthickness=0,
+        )
         img.grid(column=0, row=0, sticky=tk.N)
 
         # heading
         heading = tk.Label(
-            self, text="NEURON v1.0.1 [HOLY_FLARE]", font=("Helvetica", 13), background="#2e3440", foreground="white"
+            self,
+            text="NEURON v1.0.1 [HOLY_FLARE]",
+            font=("Helvetica", 13),
+            background="#2e3440",
+            foreground="white",
         )
         heading.grid(column=0, row=1, columnspan=2, pady=5, sticky=tk.N)
 
@@ -81,13 +87,11 @@ class App(tk.Tk):
         # Generates RSA Encryption + Decryption keys / Public + Private keys
         key = RSA.generate(2048)
 
-        private_key = key.export_key()
-        with open("private.pem", "wb") as f:
-            f.write(private_key)
+        with open("private.pem", "wb") as f:  # write private key
+            f.write(key.export_key())
 
-        public_key = key.publickey().export_key()
-        with open("public.pem", "wb") as f:
-            f.write(public_key)
+        with open("public.pem", "wb") as f:  # write public key
+            f.write(key.publickey().export_key())
 
         gen2_label = tk.Label(
             self,
@@ -97,6 +101,7 @@ class App(tk.Tk):
             text="[~] NEURON >> Keys generated, saving to files...",
         )
         gen2_label.grid(column=0, row=5, sticky=tk.W)
+
         gen3_label = tk.Label(
             self,
             background="#2e3440",
@@ -106,6 +111,7 @@ class App(tk.Tk):
             text="[~] NEURON >> Done! Your public key is.. 'public.pem'",
         )
         gen3_label.grid(column=0, row=6, sticky=tk.W)
+
         gen4_label = tk.Label(
             self,
             background="#2e3440",
@@ -118,8 +124,7 @@ class App(tk.Tk):
 
 
 def main():
-    app = App()
-    app.mainloop()
+    App().mainloop()
 
 
 if __name__ == "__main__":

