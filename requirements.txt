@@ -1,2 +1,2 @@
 cryptography==3.4.7
-pycrypto==2.6.1
+pycrypto==3.10.1
